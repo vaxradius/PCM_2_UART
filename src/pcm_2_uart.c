@@ -52,10 +52,14 @@
 #include "am_mcu_apollo.h"
 #include "am_bsp.h"
 #include "am_util.h"
+#include <string.h>
 
-
+#define WAV_METADATA	(0x30)
 #define BUF_SIZE 128
 uint8_t ui8_UART_TX_BUFF[BUF_SIZE*2];
+
+extern uint8_t WAVDataBegin;
+extern uint8_t WAVDataEnd;
 
 //*****************************************************************************
 //
@@ -111,14 +115,22 @@ am_uart_isr(void)
     }
 }
 
-
+uint32_t index = (WAV_METADATA/2);
 void uart_fifo_read_write()
 {
 	uint32_t ui32NumBytesWritten;
 	uint32_t ui32NumBytesRead;
 	uint8_t ui8inData;
 	uint32_t has_sent = 0;
+
 	am_hal_uart_fifo_read(phUART, &ui8inData, 1,&ui32NumBytesRead);
+
+	if(index >= (((uint8_t *)(&WAVDataEnd) - (uint8_t *)(&WAVDataBegin))/2)-BUF_SIZE)				
+		index = (WAV_METADATA/2);			
+
+	memcpy(ui8_UART_TX_BUFF, ((int16_t*)(&WAVDataBegin))+index, BUF_SIZE*2);
+
+	index += BUF_SIZE;
 
 	while(has_sent < BUF_SIZE*2)
 	{
@@ -185,10 +197,6 @@ main(void)
     am_util_stdio_terminal_clear();
     am_util_stdio_printf("PCM 2 UART!\n\n");
 
-	for(int i=0; i < (BUF_SIZE*2);i++)
-		ui8_UART_TX_BUFF[i] = '1';
-	ui8_UART_TX_BUFF[(BUF_SIZE*2)-1] = '0';
-	
     //
     // Loop forever while sleeping.
     //

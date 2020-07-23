@@ -387,6 +387,11 @@
               <FileType>1</FileType>
               <FilePath>..\src\pcm_2_uart.c</FilePath>
             </File>
+            <File>
+              <FileName>data_source.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\src\data_source.s</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
