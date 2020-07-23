@@ -53,6 +53,10 @@
 #include "am_bsp.h"
 #include "am_util.h"
 
+
+#define BUF_SIZE 128
+uint8_t ui8_UART_TX_BUFF[BUF_SIZE*2];
+
 //*****************************************************************************
 //
 // UART handle.
@@ -73,7 +77,7 @@ const am_hal_uart_config_t g_sUartConfig =
     //
     // Standard UART settings: 115200-8-N-1
     //
-    .ui32BaudRate = 115200,
+    .ui32BaudRate = (115200*4),
     .ui32DataBits = AM_HAL_UART_DATA_BITS_8,
     .ui32Parity = AM_HAL_UART_PARITY_NONE,
     .ui32StopBits = AM_HAL_UART_ONE_STOP_BIT,
@@ -113,9 +117,16 @@ void uart_fifo_read_write()
 	uint32_t ui32NumBytesWritten;
 	uint32_t ui32NumBytesRead;
 	uint8_t ui8inData;
+	uint32_t has_sent = 0;
 	am_hal_uart_fifo_read(phUART, &ui8inData, 1,&ui32NumBytesRead);
-	am_hal_uart_fifo_write(phUART, &ui8inData,  1, &ui32NumBytesWritten);
+
+	while(has_sent < BUF_SIZE*2)
+	{
+		am_hal_uart_fifo_write(phUART, ui8_UART_TX_BUFF+has_sent, 10, &ui32NumBytesWritten);
+		has_sent += ui32NumBytesWritten;
+	}
 }
+
 
 //*****************************************************************************
 //
@@ -173,7 +184,10 @@ main(void)
     //
     am_util_stdio_terminal_clear();
     am_util_stdio_printf("PCM 2 UART!\n\n");
-	
+
+	for(int i=0; i < (BUF_SIZE*2);i++)
+		ui8_UART_TX_BUFF[i] = '1';
+	ui8_UART_TX_BUFF[(BUF_SIZE*2)-1] = '0';
 	
     //
     // Loop forever while sleeping.
@@ -182,8 +196,8 @@ main(void)
     {
 		if(g_bRxTimeoutFlag)
 		{
-			uart_fifo_read_write();
 			g_bRxTimeoutFlag = false;
+			uart_fifo_read_write();
 		}
 
 		//
